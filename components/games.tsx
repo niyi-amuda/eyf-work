@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Gamepad2, Loader2, RotateCcw, Star, Trophy, XCircle } from "lucide-react";
 
 type Question = {
@@ -25,11 +25,53 @@ export default function Games({ onUpdate }: { onUpdate: (p: number, g: number) =
   const [quizMessage, setQuizMessage] = useState("");
   const [quizDone, setQuizDone] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [timeLeft, setTimeLeft] = useState(10);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [tapState, setTapState] = useState<"idle" | "playing" | "saving" | "done">("idle");
   const [tapMessage, setTapMessage] = useState("");
   const [loadError, setLoadError] = useState("");
 
   const current = questions[quizIndex];
+
+  useEffect(() => {
+    if (!current || quizDone) return;
+
+    setSelectedAnswer(null);
+    setTimeLeft(10);
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+
+    timerRef.current = setInterval(() => {
+      setTimeLeft((value) => {
+        if (value <= 1) {
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+
+          if (quizIndex + 1 >= questions.length) {
+            setQuizDone(true);
+          } else {
+            setQuizIndex((v) => v + 1);
+          }
+
+          return 0;
+        }
+
+        return value - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [quizIndex, questions.length, quizDone, current?.id]);
   const options = useMemo(() => current ? [
     ["A", current.option_a], ["B", current.option_b], ["C", current.option_c], ["D", current.option_d],
   ] as const : [], [current]);
@@ -53,7 +95,15 @@ export default function Games({ onUpdate }: { onUpdate: (p: number, g: number) =
   useEffect(() => { loadQuestions(); }, []);
 
   async function answerQuestion(answer: string) {
-    if (!current || quizBusy) return;
+    if (!current || quizBusy || selectedAnswer) return;
+
+    setSelectedAnswer(answer);
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
     setQuizBusy(true);
     setQuizMessage("");
     try {
@@ -64,6 +114,7 @@ export default function Games({ onUpdate }: { onUpdate: (p: number, g: number) =
       });
       const d: GameResult = await r.json().catch(() => ({}));
       if (!r.ok || !d.ok) {
+        setSelectedAnswer(null);
         setQuizMessage(d.message || "We couldn't save that answer. Please try again.");
         return;
       }
@@ -112,9 +163,35 @@ export default function Games({ onUpdate }: { onUpdate: (p: number, g: number) =
         </div>
         <div className="p-5 sm:p-6">
           {loadError ? <div className="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">{loadError}<button onClick={loadQuestions} className="mt-3 block rounded-xl bg-[#003B63] px-4 py-2 text-white">Try Again</button></div> : quizDone ? <div className="py-10 text-center"><Trophy className="mx-auto text-[#FFCC34]" size={50}/><h3 className="mt-4 text-2xl font-black text-[#003B63]">Quiz Complete! 🎉</h3><p className="mt-2 text-slate-600">You earned <b className="text-[#004F82]">{quizScore} points</b> in this round.</p><button onClick={loadQuestions} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#FFCC34] px-5 py-3 font-black text-[#003B63]"><RotateCcw size={17}/> PLAY AGAIN</button></div> : current ? <>
-            <div className="flex flex-wrap gap-2"><Badge label={current.difficulty} /><Badge label={current.category} /><>{current.reference && <Badge label={current.reference} />}</></div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap gap-2">
+                <Badge label={current.difficulty} />
+                <Badge label={current.category} />
+                <>{current.reference && <Badge label={current.reference} />}</>
+              </div>
+
+              <div
+                aria-live="polite"
+                className="relative h-10 min-w-[78px] shrink-0 overflow-hidden rounded-xl bg-[#00B8E5] px-3 text-white shadow-sm"
+              >
+                <div
+                  className="absolute inset-y-0 left-0 bg-white/20 transition-[width] duration-1000 ease-linear"
+                  style={{ width: `${(timeLeft / 10) * 100}%` }}
+                />
+                <div className="relative flex h-full items-center justify-center gap-1">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-white/80">
+                    TIME
+                  </span>
+                  <span className="text-sm font-black">{timeLeft}s</span>
+                </div>
+              </div>
+            </div>
             <h3 className="mt-5 text-xl font-black leading-7 text-[#003B63] sm:text-2xl">{current.question}</h3>
-            <div className="mt-5 grid gap-3">{options.map(([letter, text]) => <button key={letter} disabled={quizBusy} onClick={() => answerQuestion(letter)} className="group flex min-h-14 items-center gap-3 rounded-2xl border-2 border-slate-200 p-3 text-left font-bold text-[#003B63] transition hover:border-[#00B8E5] hover:bg-[#00B8E5]/5 disabled:cursor-not-allowed disabled:opacity-60"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#003B63] text-sm font-black text-white group-hover:bg-[#00B8E5]">{letter}</span><span>{text}</span></button>)}</div>
+            <div className="mt-5 grid gap-3">{options.map(([letter, text]) => <button key={letter} disabled={quizBusy} onClick={() => answerQuestion(letter)} className={`group flex min-h-14 items-center gap-3 rounded-2xl border-2 p-3 text-left font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                  selectedAnswer === letter
+                    ? "border-[#00B8E5] bg-[#00B8E5] text-white"
+                    : "border-slate-200 text-[#003B63] hover:border-[#00B8E5] hover:bg-[#00B8E5]/5"
+                }`}><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#003B63] text-sm font-black text-white group-hover:bg-[#00B8E5]">{letter}</span><span>{text}</span></button>)}</div>
             {quizBusy && <p className="mt-4 flex items-center gap-2 text-sm font-black text-[#004F82]"><Loader2 size={16} className="animate-spin"/> CHECKING ANSWER...</p>}
             {quizMessage && <p className="mt-4 rounded-2xl bg-[#00B8E5]/10 p-3 text-sm font-black text-[#004F82]">{quizMessage}</p>}
           </> : <div className="py-12 text-center text-slate-500">Loading your quiz...</div>}
