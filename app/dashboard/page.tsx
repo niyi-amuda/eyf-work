@@ -48,6 +48,7 @@ export default function Dashboard() {
           </div>
         </header>
 
+        {!data.payment_verified && <section className="card rounded-[1.75rem] border-2 border-amber-200 bg-amber-50 p-5 sm:p-6"><div className="flex items-center gap-2"><span className="text-xl">💳</span><h2 className="text-lg font-black text-[#003B63]">PAYMENT DETAILS</h2></div><p className="mt-3 text-sm font-bold text-slate-700">You can send your convention contribution to:</p><div className="mt-4 grid gap-2 rounded-2xl bg-white p-4 text-sm"><p><span className="font-black text-[#003B63]">Bank:</span> Opay</p><p><span className="font-black text-[#003B63]">Account Name:</span> Joshua Bassey Andy</p><p><span className="font-black text-[#003B63]">Account Number:</span> 9052139751</p></div><div className="mt-4 rounded-2xl bg-white p-4 text-sm"><p className="font-black text-[#003B63]">After payment:</p><p className="mt-1 text-slate-600">Please send your proof of payment via WhatsApp to <a href="https://wa.me/2348054218833" target="_blank" rel="noreferrer" className="font-black text-[#004F82] underline">08054218833</a>.</p></div><p className="mt-4 text-xs font-semibold leading-5 text-slate-500"><span className="font-black text-[#003B63]">Note:</span> If your payment is not updated on the National Youth Fellowship WhatsApp group within 24 hours after notifying Pastor Joshua Andy, kindly reach out to Brother Niyi Amuda.</p></section>}
         <Countdown />
 
         <section>
