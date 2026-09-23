@@ -1,0 +1,14 @@
+{
+  "name": "EYF 2026 Experience",
+  "short_name": "EYF Experience",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#003B63",
+  "description": "Your EYF 2026 convention companion.",
+  "icons": [
+    { "src": "/eyf-logo-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/eyf-logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
