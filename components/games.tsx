@@ -26,7 +26,7 @@ export default function Games({ onUpdate }: { onUpdate: (p: number, g: number) =
   const [quizDone, setQuizDone] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [timeLeft, setTimeLeft] = useState(10);
+  const [timeLeft, setTimeLeft] = useState(15);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [tapState, setTapState] = useState<"idle" | "playing" | "saving" | "done">("idle");
   const [tapMessage, setTapMessage] = useState("");
@@ -38,7 +38,7 @@ export default function Games({ onUpdate }: { onUpdate: (p: number, g: number) =
     if (!current || quizDone) return;
 
     setSelectedAnswer(null);
-    setTimeLeft(10);
+    setTimeLeft(15);
 
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -176,7 +176,7 @@ export default function Games({ onUpdate }: { onUpdate: (p: number, g: number) =
               >
                 <div
                   className="absolute inset-y-0 left-0 bg-white/20 transition-[width] duration-1000 ease-linear"
-                  style={{ width: `${(timeLeft / 10) * 100}%` }}
+                  style={{ width: `${(timeLeft / 15) * 100}%` }}
                 />
                 <div className="relative flex h-full items-center justify-center gap-1">
                   <span className="text-[10px] font-black uppercase tracking-wider text-white/80">
