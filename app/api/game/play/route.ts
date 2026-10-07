@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/server";
+import { isGameEnded, gameEndedResponse } from "@/lib/game-cutoff";
 
 // Backwards-compatible game endpoint. It never accepts a client-supplied score.
 export async function POST(req: Request) {
+  if (isGameEnded()) return NextResponse.json(gameEndedResponse(), { status: 403 });
   const token = (await cookies()).get("eyf_session")?.value;
   if (!token) return NextResponse.json({ message: "Your session has expired." }, { status: 401 });
   try {

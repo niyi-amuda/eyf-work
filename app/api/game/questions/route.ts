@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/server";
+import { isGameEnded, gameEndedResponse } from "@/lib/game-cutoff";
 
 export async function GET(req: Request) {
+  if (isGameEnded()) return NextResponse.json(gameEndedResponse(), { status: 403 });
   const token = (await cookies()).get("eyf_session")?.value;
   if (!token) return NextResponse.json({ message: "Your session has expired. Please enter your EYF Code again." }, { status: 401 });
   const limit = Math.min(50, Math.max(1, Number(new URL(req.url).searchParams.get("limit") || 10)));
