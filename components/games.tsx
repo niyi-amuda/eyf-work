@@ -82,7 +82,12 @@ export default function Games({ onUpdate }: { onUpdate: (p: number, g: number) =
       const r = await fetch("/api/game/questions?limit=10", { cache: "no-store" });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.message || "We could not load the quiz.");
-      setQuestions(d.questions || []);
+      const loadedQuestions = Array.isArray(d.questions) ? d.questions : [];
+      if (loadedQuestions.length === 0) {
+        throw new Error("No quiz questions are available right now. Please try again.");
+      }
+
+      setQuestions(loadedQuestions);
       setQuizIndex(0);
       setQuizDone(false);
       setQuizScore(0);
