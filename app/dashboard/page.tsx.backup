@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { CalendarCheck, CheckCircle2, Gift, Gamepad2, LogOut, Medal, RefreshCw, Trophy } from "lucide-react";
 import Countdown from "@/components/countdown";
 import Games from "@/components/games";
-import ConventionExperience from "@/components/convention-experience";
-import { GAME_END_AT } from "@/lib/game-cutoff";
 import type { Experience } from "@/lib/types";
 import { days, formatDate } from "@/lib/utils";
 
@@ -13,8 +11,6 @@ export default function Dashboard() {
   const [data, setData] = useState<Experience | null>(null);
   const [error, setError] = useState("");
   const [offline, setOffline] = useState(false);
-  const [gameEnded, setGameEnded] = useState(() => Date.now() >= GAME_END_AT.getTime());
-  const [winners, setWinners] = useState<any[]>([]);
 
   async function load() {
     setError("");
@@ -25,25 +21,6 @@ export default function Dashboard() {
       setData(d);
     } catch { setOffline(true); setError("You're offline. Live EYF data cannot be loaded right now."); }
   }
-
-
-  useEffect(() => {
-    const remaining = GAME_END_AT.getTime() - Date.now();
-    if (remaining <= 0) {
-      setGameEnded(true);
-      return;
-    }
-    const timer = window.setTimeout(() => setGameEnded(true), remaining);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    if (!gameEnded) return;
-    fetch("/api/experience/me?view=leaderboard", { cache: "no-store" })
-      .then(r => r.json())
-      .then(d => setWinners(Array.isArray(d) ? d.slice(0, 3) : []))
-      .catch(() => setWinners([]));
-  }, [gameEnded]);
 
   useEffect(() => {
     load();
@@ -71,9 +48,6 @@ export default function Dashboard() {
           </div>
         </header>
 
-        <ConventionExperience data={data} />
-
-        {!data.payment_verified && <section className="card rounded-[1.75rem] border-2 border-amber-200 bg-amber-50 p-5 sm:p-6"><div className="flex items-center gap-2"><span className="text-xl">💳</span><h2 className="text-lg font-black text-[#003B63]">PAYMENT DETAILS</h2></div><p className="mt-3 text-sm font-bold text-slate-700">You can send your convention contribution to:</p><div className="mt-4 grid gap-2 rounded-2xl bg-white p-4 text-sm"><p><span className="font-black text-[#003B63]">Bank:</span> Opay</p><p><span className="font-black text-[#003B63]">Account Name:</span> Joshua Bassey Andy</p><p><span className="font-black text-[#003B63]">Account Number:</span> 9052139751</p></div><div className="mt-4 rounded-2xl bg-white p-4 text-sm"><p className="font-black text-[#003B63]">After payment:</p><p className="mt-1 text-slate-600">Please send your proof of payment via WhatsApp to <a href="https://wa.me/2348054218833" target="_blank" rel="noreferrer" className="font-black text-[#004F82] underline">08054218833</a>.</p></div><p className="mt-4 text-xs font-semibold leading-5 text-slate-500"><span className="font-black text-[#003B63]">Note:</span> If your payment is not updated on the National Youth Fellowship WhatsApp group within 24 hours after notifying Pastor Joshua Andy, kindly reach out to Brother Niyi Amuda.</p></section>}
         <Countdown />
 
         <section>
@@ -86,7 +60,7 @@ export default function Dashboard() {
           <div className="mt-4 grid gap-3 md:grid-cols-3">{days.map((x) => { const c = data.checkins.find(v => v.day === x.key); return <div key={x.key} className={`rounded-2xl border p-4 ${c ? "border-[#00B8E5]/30 bg-[#00B8E5]/5" : "border-slate-100 bg-slate-50"}`}><p className="font-black text-[#003B63]">{x.label}</p><p className="mt-1 text-sm text-slate-500">{x.date}, 2026</p><p className={`mt-4 text-sm font-black ${c ? "text-green-700" : "text-slate-500"}`}>{c ? "✓ CHECKED IN" : "○ NOT YET CHECKED IN"}</p>{c && <small className="mt-1 block text-slate-500">{formatDate(c.checked_in_at || x.key)}</small>}</div>; })}</div>
         </section>
 
-        {gameEnded ? <WinnerBanner winners={winners} /> : <section><SectionTitle title="GAMES" /><Games onUpdate={(points, games) => setData(prev => prev ? { ...prev, points, games_played: games } : prev)} /></section>}
+        <section><SectionTitle title="GAMES" /><Games onUpdate={(points, games) => setData(prev => prev ? { ...prev, points, games_played: games } : prev)} /></section>
 
         <section className="card rounded-[1.75rem] bg-white p-5 sm:p-6"><div className="flex items-center justify-between gap-3"><SectionTitle title="POINTS LEADERBOARD" icon={<Medal />} /><LeaderboardRefresh /></div><Leaderboard /></section>
 
@@ -96,23 +70,6 @@ export default function Dashboard() {
       </div>
     </main>
   );
-}
-
-function WinnerBanner({ winners }: { winners: any[] }) {
-  return <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#003B63] via-[#004F82] to-[#00B8E5] p-6 text-white shadow-2xl sm:p-8">
-    <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-[#FFCC34]/20" />
-    <div className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-white/10" />
-    <div className="relative">
-      <div className="text-center">
-        <div className="text-4xl">🏆</div>
-        <p className="mt-2 text-xs font-black tracking-[.18em] text-[#FFCC34]">EYF EXPERIENCE 2026</p>
-        <h2 className="mt-1 text-2xl font-black sm:text-3xl">TOP 3 WINNERS</h2>
-        <p className="mt-2 text-sm font-bold text-white/75">Congratulations to our champions! 🎉</p>
-      </div>
-      {winners.length === 0 ? <div className="mt-6 rounded-2xl bg-white/10 p-5 text-center text-sm font-bold">Final results are being prepared...</div> : <div className="mt-7 grid gap-3 md:grid-cols-3">{winners.map((w, i) => <div key={w.registration_no || i} className="rounded-2xl bg-white p-5 text-center text-[#003B63] shadow-lg"><div className="text-4xl">{["🥇","🥈","🥉"][i]}</div><p className="mt-3 text-lg font-black">{w.full_name}</p><p className="mt-1 text-xs font-bold text-slate-500">{w.branch}</p><p className="mt-3 text-2xl font-black text-[#004F82]">{Number(w.points || 0).toLocaleString()} <span className="text-xs">PTS</span></p></div>)}</div>}
-      <div className="mt-6 text-center text-xs font-black tracking-wider text-white/70">GAMES CLOSED • FINAL LEADERBOARD</div>
-    </div>
-  </section>;
 }
 
 function cleanDisplayName(name: string) {
